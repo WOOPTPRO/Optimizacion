@@ -1,0 +1,1 @@
+PAgina que contiene el dashboard del proceso de Onboarding y exito de cliente, la intención es desagregar los clientes que han pasado a Onboarding desde el 28 de Julio de 2025, fecha en la que inició el nuevo proceso de Onboarding.
