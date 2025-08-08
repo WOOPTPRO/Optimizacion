@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control de Clientes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles */
+        body { font-family: 'Inter', sans-serif; }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .stat-card { background-color: white; border-radius: 0.75rem; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .stat-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-card .number { font-size: 2.25rem; font-weight: 700; line-height: 1; }
+        .stat-card .label { font-size: 0.875rem; color: #6b7280; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.3s ease; cursor: pointer; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3b82f6; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fa-sync-alt.spinning { animation: spin 1.5s linear infinite; }
+        /* Sidebar and content transition */
+        aside, #main-content-wrapper { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="loader-container" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="loader"></div>
+    </div>
+
+    <div class="relative min-h-screen flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-gray-800 text-white flex flex-col fixed inset-y-0 left-0 transform z-30 transition-transform duration-300 ease-in-out">
+            <div class="px-8 py-6 flex items-center justify-center border-b border-gray-700">
+                <i class="fas fa-chart-line fa-2x mr-3"></i>
+                <span class="text-2xl font-semibold">Dashboard</span>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#" data-view="vista-comercial" class="nav-link flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-dollar-sign fa-fw mr-3"></i>Vista Comercial
+                </a>
+                <a href="#" data-view="vista-onboarding" class="nav-link flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-rocket fa-fw mr-3"></i>Vista Equipo Onboarding
+                </a>
+                <a href="#" data-view="vista-coach" class="nav-link flex items-center px-4 py-2 rounded-md bg-gray-900">
+                    <i class="fas fa-users-cog fa-fw mr-3"></i>Clientes por Coach
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content wrapper -->
+        <div id="main-content-wrapper" class="flex-1 flex flex-col overflow-hidden">
+             <header class="flex justify-between items-center bg-white p-4 shadow-md">
+                <button id="sidebar-toggle" class="text-gray-600 focus:outline-none">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <span class="text-xl font-bold">Panel de Control</span>
+            </header>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 sm:p-6 md:p-8">
+                
+                <!-- Vista Comercial -->
+                <div id="vista-comercial" class="view-content hidden">
+                    <div id="main-view-comercial" class="max-w-7xl mx-auto">
+                        <header class="mb-4 text-center">
+                            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Dashboard Comercial</h1>
+                            <p class="text-gray-600 mt-2">Seguimiento de clientes y agendamiento de KickOff.</p>
+                        </header>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                            <div class="stat-card"><div class="icon text-blue-500"><i class="fas fa-users"></i></div><div id="stat-com-total" class="number">0</div><div class="label">Clientes Totales</div></div>
+                            <div class="stat-card"><div class="icon text-green-500"><i class="fas fa-calendar-check"></i></div><div id="stat-com-agendados" class="number">0</div><div class="label">KickOff Agendados</div></div>
+                            <div class="stat-card"><div class="icon text-red-500"><i class="fas fa-calendar-times"></i></div><div id="stat-com-pendientes" class="number">0</div><div class="label">Pendientes por Agendar</div></div>
+                        </div>
+                        <div class="card p-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div><label for="vendedor-filter" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Vendedor</label><select id="vendedor-filter" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="">Todos los Vendedores</option></select></div>
+                                <div><label for="comercial-search-input" class="block text-sm font-medium text-gray-700 mb-1">Buscar por Cliente o Licencia</label><input type="text" id="comercial-search-input" placeholder="Escribe aquí..." class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                                <div><button id="comercial-filter-button" class="btn btn-primary w-full md:w-auto"><i class="fas fa-search mr-2"></i>Consultar</button></div>
+                            </div>
+                        </div>
+                        <div id="comercial-results-container" class="space-y-4"></div>
+                        <div id="comercial-no-results" class="hidden text-center py-12"><i class="fas fa-folder-open fa-3x text-gray-400 mb-4"></i><p class="text-gray-600 text-lg">No se encontraron clientes con los filtros aplicados.</p></div>
+                    </div>
+                    <div id="detail-view-comercial" class="hidden max-w-4xl mx-auto"></div>
+                </div>
+
+                <!-- Vista Onboarding (Placeholder) -->
+                <div id="vista-onboarding" class="view-content hidden">
+                     <div class="text-center py-20">
+                        <i class="fas fa-rocket fa-4x text-gray-400 mb-4"></i>
+                        <h1 class="text-3xl font-bold text-gray-700">Vista Equipo Onboarding</h1>
+                        <p class="text-gray-500 mt-2">Aquí se mostrarán los indicadores y datos para el equipo de Onboarding.</p>
+                    </div>
+                </div>
+
+                <!-- Vista Clientes por Coach (Contenido existente) -->
+                <div id="vista-coach" class="view-content">
+                    <div id="main-view-coach" class="max-w-7xl mx-auto">
+                        <header class="mb-4 text-center">
+                            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Dashboard de Productividad</h1>
+                            <p class="text-gray-600 mt-2">Indicadores clave de la gestión de clientes.</p>
+                        </header>
+                        <div id="stats-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="stat-card"><div class="icon text-blue-500"><i class="fas fa-users"></i></div><div id="stat-total-clients" class="number">0</div><div class="label">Clientes Totales</div></div>
+                            <div class="stat-card"><div class="icon text-yellow-500"><i class="fas fa-tasks"></i></div><div id="stat-in-management" class="number">0</div><div class="label">En Gestión</div></div>
+                            <div class="stat-card"><div class="icon text-gray-500"><i class="fas fa-pause-circle"></i></div><div id="stat-not-started" class="number">0</div><div class="label">Sin Iniciar</div></div>
+                            <div class="stat-card"><div class="icon text-green-500"><i class="fas fa-check-circle"></i></div><div id="stat-finished" class="number">0</div><div class="label">Finalizados</div></div>
+                        </div>
+                        <div id="refresh-container" class="text-center mb-6">
+                            <button id="refresh-button" class="btn btn-secondary"><i id="refresh-icon" class="fas fa-sync-alt mr-2"></i><span id="refresh-text">Actualizar Ahora</span></button>
+                            <p class="text-sm text-gray-500 mt-2">Última actualización: <span id="last-updated">Nunca</span></p>
+                        </div>
+                        <div class="card p-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div><label for="coach-filter" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Coach</label><select id="coach-filter" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="">Todos los Coaches</option></select></div>
+                                <div><label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Buscar por Cliente o Licencia</label><input type="text" id="search-input" placeholder="Escribe aquí..." class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                                <div><button id="filter-button" class="btn btn-primary w-full md:w-auto"><i class="fas fa-search mr-2"></i>Consultar</button></div>
+                            </div>
+                        </div>
+                        <div id="results-container" class="space-y-4"></div>
+                        <div id="no-results" class="hidden text-center py-12"><i class="fas fa-folder-open fa-3x text-gray-400 mb-4"></i><p class="text-gray-600 text-lg">No se encontraron clientes con los filtros aplicados.</p></div>
+                    </div>
+                    <div id="detail-view" class="hidden max-w-4xl mx-auto"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GLOBAL ELEMENTS & STATE ---
+            const loader = document.getElementById('loader-container');
+            const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTv3fRQ8gbGqHFM_mLKgTvzyxJTbj7FnOjIfTCVIaRt557pfJiFxB1V76_Ot5w97WedASTCYoeHRbkh/pub?gid=1686774386&single=true&output=tsv';
+            const PROXY_URL = 'https://corsproxy.io/?';
+            const REFRESH_INTERVAL = 300000;
+            let allClientsData = [];
+            let headers = [];
+            let colIndices = {};
+            const COL_NAMES = {
+                LICENCIA: 'Licencia', NOMBRE_CLIENTE: 'Nombre_Empresa', COACH: 'Coach', ESTADO_PROCESO: 'Estado_Actual',
+                KICKOFF_FECHA_CITA: 'KickOff_Fecha_Cita', FECHA_COMPRA: 'Fecha_Compra', NOMBRE_VENDEDOR: 'Nombre_Vendedor',
+                INSTALACION: 'Instalado', TIPO_PRODUCTO: 'Tipo_Producto', CANTIDAD_CITAS_ADICIONALES: 'Cantidad_Citas_Adicionales_a_KickOff',
+                HORAS_USADAS: 'Horas_Usadas', AGENDADO_KICKOFF: 'Agendado_KickOff', KICKOFF_FECHA_CREACION: 'KickOff_Fecha_Creacion',
+                DIAS_BIENVENIDA: 'Dias_Bienvenida'
+            };
+
+            // --- NAVIGATION ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const views = document.querySelectorAll('.view-content');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const mainContentWrapper = document.getElementById('main-content-wrapper');
+            let isSidebarOpen = window.innerWidth >= 768;
+
+            function applySidebarState() {
+                if (isSidebarOpen) {
+                    sidebar.classList.remove('-translate-x-full');
+                    mainContentWrapper.classList.add('md:ml-64');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    mainContentWrapper.classList.remove('md:ml-64');
+                }
+            }
+
+            function showView(viewId) {
+                views.forEach(view => view.classList.add('hidden'));
+                navLinks.forEach(link => link.classList.remove('bg-gray-900'));
+                document.getElementById(viewId).classList.remove('hidden');
+                document.querySelector(`.nav-link[data-view="${viewId}"]`).classList.add('bg-gray-900');
+                if (window.innerWidth < 768) {
+                    isSidebarOpen = false;
+                    applySidebarState();
+                }
+            }
+            
+            sidebarToggle.addEventListener('click', () => {
+                isSidebarOpen = !isSidebarOpen;
+                applySidebarState();
+            });
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showView(e.currentTarget.dataset.view);
+                });
+            });
+            
+            applySidebarState();
+            showView('vista-coach');
+
+            // --- DATA FETCHING ---
+            const refreshButton = document.getElementById('refresh-button');
+            const refreshIcon = document.getElementById('refresh-icon');
+            const refreshText = document.getElementById('refresh-text');
+            const lastUpdatedSpan = document.getElementById('last-updated');
+
+            async function fetchData(isManual = false) {
+                if (isManual) {
+                    refreshIcon.classList.add('spinning');
+                    refreshText.textContent = 'Actualizando...';
+                    refreshButton.disabled = true;
+                }
+                try {
+                    const cacheBustingUrl = `${SPREADSHEET_URL}&_=${new Date().getTime()}`;
+                    const response = await fetch(`${PROXY_URL}${encodeURIComponent(cacheBustingUrl)}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const tsvData = await response.text();
+                    const rows = tsvData.trim().split('\n').map(row => row.split('\t').map(cell => cell.replace(/\r$/, '').trim()));
+                    headers = rows.shift(); 
+                    for (const key in COL_NAMES) {
+                        colIndices[key] = headers.findIndex(h => h.trim() === COL_NAMES[key].trim());
+                    }
+                    allClientsData = rows;
+                    populateCoachFilter(allClientsData);
+                    populateVendedorFilter(allClientsData);
+                    updateCoachViews(); 
+                    updateComercialViews();
+                    lastUpdatedSpan.textContent = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    document.getElementById('results-container').innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg"><p class="font-bold">Error al cargar los datos.</p><p>Por favor, revisa la URL y tu conexión.</p></div>`;
+                    document.getElementById('comercial-results-container').innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg"><p class="font-bold">Error al cargar los datos.</p><p>Por favor, revisa la URL y tu conexión.</p></div>`;
+                } finally {
+                    if (isManual) {
+                        refreshIcon.classList.remove('spinning');
+                        refreshText.textContent = 'Actualizar Ahora';
+                        refreshButton.disabled = false;
+                    }
+                    loader.style.display = 'none';
+                }
+            }
+            
+            const getData = (row, key, fallback = null) => {
+                const index = colIndices[key];
+                return (index !== -1 && row && row[index]) ? row[index] : fallback;
+            };
+            
+            refreshButton.addEventListener('click', () => fetchData(true));
+            fetchData(true);
+            setInterval(() => fetchData(false), REFRESH_INTERVAL);
+
+            // --- COACH VIEW ---
+            const coachFilter = document.getElementById('coach-filter');
+            const searchInput = document.getElementById('search-input');
+            const filterButton = document.getElementById('filter-button');
+            const resultsContainer = document.getElementById('results-container');
+            const noResultsMessage = document.getElementById('no-results');
+            const statTotalClients = document.getElementById('stat-total-clients');
+            const statInManagement = document.getElementById('stat-in-management');
+            const statFinished = document.getElementById('stat-finished');
+            const statNotStarted = document.getElementById('stat-not-started');
+            const mainViewCoach = document.getElementById('main-view-coach');
+            const detailView = document.getElementById('detail-view');
+
+            function updateCoachViews() {
+                const selectedCoach = coachFilter.value;
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredData = allClientsData.filter(client => {
+                    const coachMatch = !selectedCoach || (getData(client, 'COACH') === selectedCoach);
+                    const clientName = getData(client, 'NOMBRE_CLIENTE', '');
+                    const license = getData(client, 'LICENCIA', '');
+                    const searchMatch = !searchTerm || clientName.toLowerCase().includes(searchTerm) || license.toLowerCase().includes(searchTerm);
+                    return coachMatch && searchMatch;
+                });
+                updateDashboard(filteredData);
+                renderResults(filteredData);
+            }
+
+            function updateDashboard(data) {
+                let inManagement = 0, finished = 0, notStarted = 0;
+                data.forEach(client => {
+                    const status = (getData(client, 'ESTADO_PROCESO') || '').toLowerCase();
+                    if (status.includes('en gestión') || status.includes('en proceso') || status.includes('kickoff')) inManagement++;
+                    else if (status.includes('finalizado')) finished++;
+                    else if (status.includes('sin iniciar')) notStarted++;
+                });
+                statTotalClients.textContent = data.length;
+                statInManagement.textContent = inManagement;
+                statFinished.textContent = finished;
+                statNotStarted.textContent = notStarted;
+            }
+
+            function populateCoachFilter(data) {
+                const currentSelection = coachFilter.value;
+                const options = new Set(data.map(row => getData(row, 'COACH')).filter(Boolean));
+                while (coachFilter.options.length > 1) coachFilter.remove(1);
+                options.forEach(coach => {
+                    const option = document.createElement('option');
+                    option.value = coach;
+                    option.textContent = coach;
+                    coachFilter.appendChild(option);
+                });
+                coachFilter.value = currentSelection;
+            }
+
+            function renderResults(data) {
+                resultsContainer.innerHTML = '';
+                if (data.length === 0) { noResultsMessage.classList.remove('hidden'); return; }
+                noResultsMessage.classList.add('hidden');
+                data.forEach(client => {
+                    const license = getData(client, 'LICENCIA', 'N/A');
+                    if (license === 'N/A') return;
+                    const clientCard = document.createElement('div');
+                    clientCard.className = 'card grid grid-cols-1 md:grid-cols-4 gap-4 items-center p-4';
+                    const status = getData(client, 'ESTADO_PROCESO', 'No definido');
+                    const statusColor = getStatusColor(status);
+                    const clientName = getData(client, 'NOMBRE_CLIENTE', 'N/A');
+                    let semaphoreHTML = '';
+                    const statusLower = status.toLowerCase();
+                    if (statusLower.includes('en gestión') || statusLower.includes('kickoff')) {
+                        const kickoffDateStr = getData(client, 'KICKOFF_FECHA_CITA');
+                        if (kickoffDateStr) {
+                            const parts = kickoffDateStr.split('/');
+                            if (parts.length === 3) {
+                                const kickoffDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (!isNaN(kickoffDate.getTime())) {
+                                    const diffDays = Math.ceil((today - kickoffDate) / (1000 * 60 * 60 * 24));
+                                    let semaphoreColor = diffDays <= 5 ? 'bg-green-500' : (diffDays <= 12 ? 'bg-yellow-500' : 'bg-red-500');
+                                    semaphoreHTML = `<span title="${diffDays} días desde KickOff" class="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white ${semaphoreColor}">${diffDays}</span>`;
+                                }
+                            }
+                        }
+                    }
+                    clientCard.innerHTML = `<div><p class="text-xs text-gray-500">Licencia</p><p class="font-semibold text-gray-800">${license}</p></div><div class="md:col-span-1"><p class="text-xs text-gray-500">Nombre Cliente</p><p class="font-semibold text-gray-800 truncate">${clientName}</p></div><div><p class="text-xs text-gray-500">Estado</p><div class="flex items-center space-x-2"><span class="px-3 py-1 text-sm font-medium rounded-full ${statusColor}">${status}</span>${semaphoreHTML}</div></div><div class="text-right"><button class="btn btn-primary view-details-btn" data-license="${license}"><i class="fas fa-eye mr-2"></i>Ver Detalle</button></div>`;
+                    resultsContainer.appendChild(clientCard);
+                });
+            }
+            
+            function getStatusColor(status) {
+                const s = (status || '').toLowerCase();
+                if (s.includes('finalizado')) return 'bg-green-100 text-green-800';
+                if (s.includes('en gestión') || s.includes('en proceso') || s.includes('kickoff')) return 'bg-yellow-100 text-yellow-800';
+                if (s.includes('sin iniciar')) return 'bg-gray-200 text-gray-800';
+                if (s.includes('cancelado')) return 'bg-red-100 text-red-800';
+                return 'bg-blue-100 text-blue-800';
+            }
+
+            function showDetailsView(license, container, mainView) {
+                const clientDataRow = allClientsData.find(row => getData(row, 'LICENCIA') === license);
+                if (!clientDataRow) return;
+                const clientData = {};
+                headers.forEach((header, index) => { clientData[header] = clientDataRow[index]; });
+                let appointmentsHTML = '';
+                for (let i = 1; i <= 6; i++) {
+                    const tipoCita = clientData[`Cita_${i}_Tipo_Cita`];
+                    if (tipoCita) {
+                        appointmentsHTML += `<div class="border-t border-gray-200 pt-4 mt-4"><h4 class="text-lg font-semibold text-gray-700 mb-3">Cita ${i}: ${tipoCita}</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><p><strong class="text-gray-600">Fecha:</strong> ${clientData[`Cita_${i}_Fecha_Cita`] || 'N/A'}</p><p><strong class="text-gray-600">Duración:</strong> ${clientData[`Cita_${i}_Duracion`] || 'N/A'} min</p><p class="col-span-2"><strong class="text-gray-600">Asesor:</strong> ${clientData[`Cita_${i}_Nombre_Asesor`] || 'N/A'}</p><div class="col-span-2 mt-2"><strong class="text-gray-600">Nota:</strong><p class="mt-1 p-3 bg-gray-50 rounded-md border">${clientData[`Cita_${i}_Nota_Cita`] || 'Sin notas.'}</p></div></div></div>`;
+                    }
+                }
+                if (!appointmentsHTML) appointmentsHTML = `<p class="text-center text-gray-500 mt-6 py-4 border-t">Este cliente no tiene citas registradas.</p>`;
+                
+                const coachHTML = mainView.id === 'main-view-comercial' ? `<p><strong class="text-gray-600">Coach Asignado:</strong> ${clientData[COL_NAMES.COACH] || 'N/A'}</p>` : '';
+
+                container.innerHTML = `<div class="card p-6 sm:p-8"><div class="flex justify-between items-start mb-6"><h2 class="text-2xl font-bold text-gray-800">${clientData[COL_NAMES.NOMBRE_CLIENTE] || 'N/A'}</h2><button class="btn btn-secondary back-button"><i class="fas fa-arrow-left mr-2"></i>Regresar</button></div><div class="mb-6"><h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Datos Generales</h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm"><p><strong class="text-gray-600">Fecha Compra:</strong> ${clientData[COL_NAMES.FECHA_COMPRA] || 'N/A'}</p><p><strong class="text-gray-600">Vendedor:</strong> ${clientData[COL_NAMES.NOMBRE_VENDEDOR] || 'N/A'}</p><p><strong class="text-gray-600">Producto:</strong> ${clientData[COL_NAMES.TIPO_PRODUCTO] || 'N/A'}</p><p><strong class="text-gray-600">Instalado:</strong> ${clientData[COL_NAMES.INSTALACION] || 'N/A'}</p><p><strong class="text-gray-600">Horas Usadas:</strong> ${clientData[COL_NAMES.HORAS_USADAS] || '0'}</p><p><strong class="text-gray-600">Citas Adicionales:</strong> ${clientData[COL_NAMES.CANTIDAD_CITAS_ADICIONALES] || '0'}</p>${coachHTML}</div></div><div><h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Historial de Citas</h3>${appointmentsHTML}</div></div>`;
+                mainView.classList.add('hidden');
+                container.classList.remove('hidden');
+                container.querySelector('.back-button').addEventListener('click', () => {
+                    container.classList.add('hidden');
+                    mainView.classList.remove('hidden');
+                    container.innerHTML = '';
+                });
+            }
+
+            filterButton.addEventListener('click', updateCoachViews);
+            coachFilter.addEventListener('change', updateCoachViews);
+            searchInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') updateCoachViews(); });
+            resultsContainer.addEventListener('click', (event) => {
+                const button = event.target.closest('.view-details-btn');
+                if (button) showDetailsView(button.dataset.license, detailView, mainViewCoach);
+            });
+
+            // --- COMERCIAL VIEW ---
+            const vendedorFilter = document.getElementById('vendedor-filter');
+            const comercialSearchInput = document.getElementById('comercial-search-input');
+            const comercialFilterButton = document.getElementById('comercial-filter-button');
+            const comercialResultsContainer = document.getElementById('comercial-results-container');
+            const comercialNoResults = document.getElementById('comercial-no-results');
+            const statComTotal = document.getElementById('stat-com-total');
+            const statComAgendados = document.getElementById('stat-com-agendados');
+            const statComPendientes = document.getElementById('stat-com-pendientes');
+            const mainViewComercial = document.getElementById('main-view-comercial');
+            const detailViewComercial = document.getElementById('detail-view-comercial');
+
+            function updateComercialViews() {
+                const selectedVendedor = vendedorFilter.value;
+                const searchTerm = comercialSearchInput.value.toLowerCase();
+                const filteredData = allClientsData.filter(client => {
+                    const vendedorMatch = !selectedVendedor || (getData(client, 'NOMBRE_VENDEDOR') === selectedVendedor);
+                    const clientName = getData(client, 'NOMBRE_CLIENTE', '');
+                    const license = getData(client, 'LICENCIA', '');
+                    const searchMatch = !searchTerm || clientName.toLowerCase().includes(searchTerm) || license.toLowerCase().includes(searchTerm);
+                    return vendedorMatch && searchMatch;
+                });
+                updateComercialDashboard(filteredData);
+                renderComercialResults(filteredData);
+            }
+
+            function updateComercialDashboard(data) {
+                let agendados = 0;
+                let pendientes = 0;
+                data.forEach(client => {
+                    const agendado = (getData(client, 'AGENDADO_KICKOFF') || '').toLowerCase();
+                    if (agendado === 'sí') {
+                        agendados++;
+                    } else if (agendado === 'no') {
+                        pendientes++;
+                    }
+                });
+                statComTotal.textContent = data.length;
+                statComAgendados.textContent = agendados;
+                statComPendientes.textContent = pendientes;
+            }
+
+            function populateVendedorFilter(data) {
+                const currentSelection = vendedorFilter.value;
+                const options = new Set(data.map(row => getData(row, 'NOMBRE_VENDEDOR')).filter(Boolean));
+                while (vendedorFilter.options.length > 1) vendedorFilter.remove(1);
+                options.forEach(vendedor => {
+                    const option = document.createElement('option');
+                    option.value = vendedor;
+                    option.textContent = vendedor;
+                    vendedorFilter.appendChild(option);
+                });
+                vendedorFilter.value = currentSelection;
+            }
+
+            function renderComercialResults(data) {
+                comercialResultsContainer.innerHTML = '';
+                if (data.length === 0) { comercialNoResults.classList.remove('hidden'); return; }
+                comercialNoResults.classList.add('hidden');
+                data.forEach(client => {
+                    const license = getData(client, 'LICENCIA', 'N/A');
+                    if (license === 'N/A') return;
+                    const clientCard = document.createElement('div');
+                    clientCard.className = 'card flex flex-wrap items-center justify-between p-4 gap-4';
+                    const clientName = getData(client, 'NOMBRE_CLIENTE', 'N/A');
+                    const diasStr = getData(client, 'DIAS_BIENVENIDA');
+                    const dias = diasStr ? parseInt(diasStr.replace(',', '.'), 10) : null;
+                    
+                    let diasSemaphoreHTML = '';
+                    if (dias !== null && !isNaN(dias)) {
+                        let semaphoreColor = '';
+                        if (dias <= 1) semaphoreColor = 'bg-green-500';
+                        else if (dias === 2) semaphoreColor = 'bg-yellow-500';
+                        else semaphoreColor = 'bg-red-500';
+                        diasSemaphoreHTML = `<span title="${dias} días para agendar" class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold text-white ${semaphoreColor}">${dias}</span>`;
+                    } else {
+                        diasSemaphoreHTML = `<span class="text-sm text-gray-500">N/A</span>`;
+                    }
+
+                    let agendadoSemaphoreHTML = '';
+                    const agendado = (getData(client, 'AGENDADO_KICKOFF') || '').toLowerCase();
+                    if (agendado === 'sí') {
+                        agendadoSemaphoreHTML = `<span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Sí</span>`;
+                    } else if (agendado === 'no') {
+                        agendadoSemaphoreHTML = `<span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">No</span>`;
+                    } else {
+                        agendadoSemaphoreHTML = `<span class="text-sm text-gray-500">N/A</span>`;
+                    }
+
+                    clientCard.innerHTML = `
+                        <div class="flex-1 min-w-[150px]">
+                            <p class="text-xs text-gray-500">Licencia</p>
+                            <p class="font-semibold text-gray-800 truncate">${license}</p>
+                        </div>
+                        <div class="flex-1 min-w-[200px]">
+                            <p class="text-xs text-gray-500">Nombre Cliente</p>
+                            <p class="font-semibold text-gray-800 truncate">${clientName}</p>
+                        </div>
+                        <div class="flex flex-col items-center min-w-[120px]">
+                            <p class="text-xs text-gray-500 mb-1">KickOff Agendado</p>
+                            ${agendadoSemaphoreHTML}
+                        </div>
+                        <div class="flex flex-col items-center min-w-[120px]">
+                            <p class="text-xs text-gray-500 mb-1">Días para Agendar</p>
+                            ${diasSemaphoreHTML}
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button class="btn btn-primary view-details-comercial-btn" data-license="${license}">
+                                <i class="fas fa-eye mr-2"></i>Ver Detalle
+                            </button>
+                        </div>
+                    `;
+                    comercialResultsContainer.appendChild(clientCard);
+                });
+            }
+
+            comercialFilterButton.addEventListener('click', updateComercialViews);
+            vendedorFilter.addEventListener('change', updateComercialViews);
+            comercialSearchInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') updateComercialViews(); });
+            comercialResultsContainer.addEventListener('click', (event) => {
+                const button = event.target.closest('.view-details-comercial-btn');
+                if (button) showDetailsView(button.dataset.license, detailViewComercial, mainViewComercial);
+            });
+        });
+    </script>
+</body>
+</html>
